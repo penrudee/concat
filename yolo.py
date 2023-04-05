@@ -337,8 +337,12 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 n = 1
         elif m is nn.BatchNorm2d:
             args = [ch[f]]
-        elif isinstance(m, dict) and m.get('type') == 'Concat':
-            c2 = sum(ch[x] for x in f)
+        elif isinstance(m, Concat):
+            c1 = ch[f[0]]
+            c2 = ch[f[1]]
+            dim = m.dimension
+            m_ = Concat(dimension=dim, layers=[c1, c2])
+            ch.append(c1)
         # TODO: channel, gw, gd
         elif m in {Detect, Segment}:
             args.append([ch[x] for x in f])
@@ -351,7 +355,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
         else:
-            c2 = ch[f[0]]
+            c2 = ch[f]
 
         m_ = nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace('__main__.', '')  # module type
