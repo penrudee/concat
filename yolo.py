@@ -28,6 +28,7 @@ from utils.general import LOGGER, check_version, check_yaml, make_divisible, pri
 from utils.plots import feature_visualization
 from utils.torch_utils import (fuse_conv_and_bn, initialize_weights, model_info, profile, scale_img, select_device,
                                time_sync)
+from models.common import Conv, DWConv, Bottleneck, SPP, SPPF, BottleneckCSP, BottleneckCSP2, C3, C3TR, Mosaic, Focus, Concat  # Add 'Concat' here
 
 try:
     import thop  # for FLOPs computation
@@ -308,7 +309,15 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
 
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
     for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
-        m = eval(m) if isinstance(m, str) else m  # eval strings
+        # m = eval(m) if isinstance(m, str) else m  # eval strings
+        if isinstance(m, str):
+            if m == "Concat":
+                from models.common import Concat
+                m = Concat
+            else:
+                m = eval(m)
+        else:
+            m = m
         for j, a in enumerate(args):
             with contextlib.suppress(NameError):
                 args[j] = eval(a) if isinstance(a, str) else a  # eval strings
