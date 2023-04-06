@@ -20,7 +20,9 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 if platform.system() != 'Windows':
     ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-from models.common import Conv, DWConv, Bottleneck, SPP, SPPF, BottleneckCSP, C3, C3TR,  Focus, Concat  # Add 'Concat' here
+from models.common import Conv, DWConv, Bottleneck, SPP, SPPF, BottleneckCSP, C3, C3TR,  Focus, Concat # Add 'Concat' here
+# from models.common import Conv, DWConv, Bottleneck, SPP, SPPF, BottleneckCSP, C3, C3TR, Focus, Concat
+
 
 from models.common import *
 from models.experimental import *
@@ -337,7 +339,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 n = 1
         elif m is nn.BatchNorm2d:
             args = [ch[f]]
-        elif isinstance(m, Concat):
+        elif isinstance(m,Concat ):
             c1 = ch[f[0]]
             c2 = ch[f[1]]
             dim = m.dimension
