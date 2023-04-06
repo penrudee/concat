@@ -5,12 +5,13 @@ YOLO-specific modules
 Usage:
     $ python models/yolo.py --cfg yolov5s.yaml
 """
-from models.common import Concat
+
 import argparse
 import contextlib
 import os
 import platform
 import sys
+import datetime 
 from copy import deepcopy
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from models.common import Conv, DWConv, Bottleneck, SPP, SPPF, BottleneckCSP, C3
 
 
 from models.common import *
+from models.common import Concat
 from models.experimental import *
 from utils.autoanchor import check_anchor_order
 from utils.general import LOGGER, check_version, check_yaml, make_divisible, print_args
@@ -301,6 +303,7 @@ class ClassificationModel(BaseModel):
 
 
 def parse_model(d, ch):  # model_dict, input_channels(3)
+    from models.common import Concat 
     # Parse a YOLOv5 model.yaml dictionary
     LOGGER.info(f"\n{'':>3}{'from':>18}{'n':>3}{'params':>10}  {'module':<40}{'arguments':<30}")
     anchors, nc, gd, gw, act = d['anchors'], d['nc'], d['depth_multiple'], d['width_multiple'], d.get('activation')
@@ -311,6 +314,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
     no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
 
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
+    
     for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
         # m = eval(m) if isinstance(m, str) else m  # eval strings
         if isinstance(m, str):
@@ -339,11 +343,13 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 n = 1
         elif m is nn.BatchNorm2d:
             args = [ch[f]]
-        elif isinstance(m,Concat ):
-            c1 = ch[f[0]]
-            c2 = ch[f[1]]
+        
+        elif isinstance(m,Concat):
+            
+            c1 = ch[-1]
+            c2 = ch[f]
             dim = m.dimension
-            m_ = Concat(dimension=dim, layers=[c1, c2])
+            m_ = Concat(dim,layers=f)
             ch.append(c1)
         # TODO: channel, gw, gd
         elif m in {Detect, Segment}:
@@ -357,7 +363,14 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
         else:
+            print("#"*20)
+            print("print time: ",datetime.datetime.now().strftime("%d-%m-%Y %H:%M"))
+            print(ch)
+            print("#"*20)
             c2 = ch[f]
+            print("$"*20)
+            print(c2)
+            print("$"*20)
 
         m_ = nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace('__main__.', '')  # module type
